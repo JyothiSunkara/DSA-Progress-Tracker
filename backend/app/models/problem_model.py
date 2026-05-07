@@ -10,6 +10,8 @@ class Problem(Base):
     difficulty = Column(String, nullable=False)
     link = Column(String, nullable=False)
 
-    topic_id = Column(Integer, ForeignKey("topics.id"))
-    
+    topic_id = Column(Integer, ForeignKey("topics.id")) 
     topic = relationship("Topic")
+
+    user_id = Column(Integer, ForeignKey("users.id"))
+    user = relationship("User")
