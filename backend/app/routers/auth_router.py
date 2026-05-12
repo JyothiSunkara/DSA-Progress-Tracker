@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.database.dependencies import get_db
 from app.models.user_model import User
-from app.schemas.user_schema import UserCreate
+from app.schemas.user_schema import UserCreate, UserLogin
 from app.utils.auth import hash_password, verify_password, create_access_token
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -40,7 +40,7 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
 
 # LOGIN
 @router.post("/login")
-def login(user: UserCreate, db: Session = Depends(get_db)):
+def login(user: UserLogin, db: Session = Depends(get_db)):
 
     db_user = db.query(User).filter(User.email == user.email).first()
 
