@@ -13,6 +13,7 @@ class ProblemResponse(BaseModel):
     difficulty : str
     link : Optional[str]
     topic_id : int
-
+    is_solved: bool
+    
     class Config:
         from_attributes = True

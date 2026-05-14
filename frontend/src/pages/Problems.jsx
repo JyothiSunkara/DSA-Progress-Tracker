@@ -16,6 +16,10 @@ function Problems() {
 
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [topicFilter, setTopicFilter] = useState("All");
+  const [difficultyFilter, setDifficultyFilter] = useState("All");
 
   const handleChange = (e) => {
     setFormData({
@@ -75,14 +79,40 @@ function Problems() {
   };
 
   const toggleSolved = async (id) => {
-    setProblems((prevProblems) =>
-      prevProblems.map((problem) =>
-        problem.id === id
-          ? { ...problem, is_solved: !problem.is_solved }
-          : problem,
-      ),
-    );
+    try {
+      const response = await API.put(`/problems/${id}/toggle`);
+
+      setProblems((prevProblems) =>
+        prevProblems.map((problem) =>
+          problem.id === id ? response.data : problem,
+        ),
+      );
+    } catch (error) {
+      console.error(error);
+    }
   };
+
+  const filteredProblems = problems.filter((problem) => {
+    const title = problem.title || "";
+    const difficulty = problem.difficulty || "";
+
+    const matchesSearch =
+      title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      difficulty.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus =
+      statusFilter === "All" ||
+      (statusFilter === "Solved" && problem.is_solved) ||
+      (statusFilter === "Unsolved" && !problem.is_solved);
+
+    const matchesTopic =
+      topicFilter === "All" || problem.topic_id === Number(topicFilter);
+
+    const matchesDifficulty =
+      difficultyFilter === "All" || difficulty === difficultyFilter;
+
+    return matchesSearch && matchesStatus && matchesTopic && matchesDifficulty;
+  });
 
   return (
     <div>
@@ -189,6 +219,55 @@ function Problems() {
         )}
       </div>
 
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        {/* Search */}
+        <input
+          type="text"
+          placeholder="Search problems..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="bg-gray-800 text-white px-4 py-3 rounded-xl outline-none flex-1"
+        />
+
+        {/* Status Filter */}
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="bg-gray-800 text-white px-4 py-3 rounded-xl outline-none"
+        >
+          <option value="All">All Status</option>
+          <option value="Solved">Solved</option>
+          <option value="Unsolved">Unsolved</option>
+        </select>
+
+        {/* Topic Filter */}
+        <select
+          value={topicFilter}
+          onChange={(e) => setTopicFilter(e.target.value)}
+          className="bg-gray-800 text-white px-4 py-3 rounded-xl outline-none"
+        >
+          <option value="All">All Topics</option>
+
+          {topics.map((topic) => (
+            <option key={topic.id} value={topic.id}>
+              {topic.name}
+            </option>
+          ))}
+        </select>
+
+        {/* Difficulty Filter */}
+        <select
+          value={difficultyFilter}
+          onChange={(e) => setDifficultyFilter(e.target.value)}
+          className="bg-gray-800 text-white px-4 py-3 rounded-xl outline-none"
+        >
+          <option value="All">All Difficulty</option>
+          <option value="Easy">Easy</option>
+          <option value="Medium">Medium</option>
+          <option value="Hard">Hard</option>
+        </select>
+      </div>
+
       {problems.length === 0 ? (
         <div className="bg-gray-800 rounded-2xl p-10 text-center">
           <h2 className="text-2xl font-semibold mb-3">No Problems Yet</h2>
@@ -197,16 +276,25 @@ function Problems() {
             Start adding problems to track your progress.
           </p>
         </div>
+      ) : filteredProblems.length === 0 ? (
+        <div className="bg-gray-800 rounded-2xl p-10 text-center">
+          <h2 className="text-2xl font-semibold mb-3">No Matching Problems</h2>
+
+          <p className="text-gray-400">
+            Try changing filters or search keywords.
+          </p>
+        </div>
       ) : (
         <div className="flex flex-col gap-4">
-          {problems.map((problem) => (
+          {filteredProblems.map((problem) => (
             <div
               key={problem.id}
               className="bg-gray-800 rounded-2xl p-5 shadow-lg"
             >
               <div className="flex items-center justify-between gap-4">
+                {" "}
                 {/* Left */}
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                   <div
                     onClick={() => toggleSolved(problem.id)}
                     className={`w-5 h-5 rounded-md border-2 flex items-center justify-center cursor-pointer transition ${
@@ -228,10 +316,8 @@ function Problems() {
                     {problem.title}
                   </h2>
                 </div>
-
                 {/* Right */}
                 <div className="flex items-center gap-3">
-                  {/* Link Icon */}
                   <a
                     href={problem.link}
                     target="_blank"
@@ -241,7 +327,6 @@ function Problems() {
                     <FiExternalLink size={20} />
                   </a>
 
-                  {/* Difficulty */}
                   <span
                     className={`px-3 py-1 rounded-full text-sm ${
                       problem.difficulty === "Easy"

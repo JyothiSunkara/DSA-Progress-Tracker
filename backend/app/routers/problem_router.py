@@ -37,3 +37,20 @@ def get_problems(
     return db.query(Problem).filter(
         Problem.user_id == current_user.id
     ).all()
+
+@router.put("/{problem_id}/toggle")
+def toggle_problem_status(
+    problem_id: int,
+    db: Session = Depends(get_db),
+):
+    problem = db.query(Problem).filter(Problem.id == problem_id).first()
+
+    if not problem:
+        raise HTTPException(status_code=404, detail="Problem not found")
+
+    problem.is_solved = not problem.is_solved
+
+    db.commit()
+    db.refresh(problem)
+
+    return problem
